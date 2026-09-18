@@ -1,4 +1,4 @@
-package com.erentech.aplicativo;
+package com.erentech.app;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -64,7 +64,6 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setDownloadListener(
                 (url, userAgent, contentDisposition, mimetype, contentLength) -> {
-
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW);
                         intent.setData(Uri.parse(url));
