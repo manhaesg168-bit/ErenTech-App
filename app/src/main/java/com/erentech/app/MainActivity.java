@@ -1,18 +1,18 @@
 package com.erentech.aplicativo;
 
-import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.webkit.ValueCallback;
-import android.content.Intent;
-import android.net.Uri;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
@@ -44,6 +44,10 @@ public class MainActivity extends Activity {
                     ValueCallback<Uri[]> callback,
                     FileChooserParams fileChooserParams) {
 
+                if (filePathCallback != null) {
+                    filePathCallback.onReceiveValue(null);
+                }
+
                 filePathCallback = callback;
 
                 try {
@@ -58,30 +62,33 @@ public class MainActivity extends Activity {
             }
         });
 
-        webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse(url));
-                startActivity(intent);
-            } catch (Exception ignored) {
-            }
-        });
+        webView.setDownloadListener(
+                (url, userAgent, contentDisposition, mimetype, contentLength) -> {
+
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse(url));
+                        startActivity(intent);
+                    } catch (Exception ignored) {
+                    }
+                });
 
         webView.loadUrl("https://erentech.discloud.app/");
 
         getOnBackPressedDispatcher().addCallback(
                 this,
                 new OnBackPressedCallback(true) {
+
                     @Override
                     public void handleOnBackPressed() {
+
                         if (webView.canGoBack()) {
                             webView.goBack();
                         } else {
                             finish();
                         }
                     }
-                }
-        );
+                });
     }
 
     @Override
@@ -92,15 +99,28 @@ public class MainActivity extends Activity {
 
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (requestCode == FILE_CHOOSER_REQUEST &&
-                filePathCallback != null) {
+        if (requestCode == FILE_CHOOSER_REQUEST
+                && filePathCallback != null) {
 
             Uri[] results = null;
 
             if (resultCode == RESULT_OK && data != null) {
 
-                if (data.getData() != null) {
-                    results = new Uri[]{data.getData()};
+                if (data.getClipData() != null) {
+
+                    int count = data.getClipData().getItemCount();
+                    results = new Uri[count];
+
+                    for (int i = 0; i < count; i++) {
+                        results[i] =
+                                data.getClipData().getItemAt(i).getUri();
+                    }
+
+                } else if (data.getData() != null) {
+
+                    results = new Uri[]{
+                            data.getData()
+                    };
                 }
             }
 
@@ -111,10 +131,11 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+
         if (webView != null) {
             webView.destroy();
         }
 
         super.onDestroy();
     }
-                      }
+}
